@@ -1,0 +1,59 @@
+# Reference: <https://postmarketos.org/vendorkernel>
+# Kernel config based on: arch/arm64/configs/(CHANGEME!)
+
+pkgname=linux-gm-gm8_go
+pkgver=4.4.95
+pkgrel=0
+pkgdesc="General Mobile GM8 Go kernel fork"
+arch="aarch64"
+_carch="arm64"
+_flavor="gm-gm8_go"
+url="https://kernel.org"
+license="GPL-2.0-only"
+options="!strip !check !tracedeps pmb:cross-native"
+makedepends="
+	bash
+	bc
+	bison
+	devicepkg-dev
+	findutils
+	flex
+	openssl-dev
+	perl
+"
+
+# Source
+_repository="gm8go-omr1-kernel"
+_commit="bc28d182ad94a3df46ac2fc2dfcc633e15e2c711"
+_config="config-$_flavor.$arch"
+source="
+	$pkgname-$_commit.tar.gz::https://github.com/logoskosmos/$_repository/archive/$_commit.tar.gz
+	$_config
+	gcc8-fix-put-user.patch
+	linux4.2-gcc10-extern_YYLOC_global_declaration.patch
+"
+builddir="$srcdir/$_repository-$_commit"
+_outdir="out"
+
+prepare() {
+	default_prepare
+	. downstreamkernel_prepare
+}
+
+build() {
+	unset LDFLAGS
+	make O="$_outdir" ARCH="$_carch" CC="${CC:-gcc}" \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-postmarketOS"
+}
+
+package() {
+	downstreamkernel_package "$builddir" "$pkgdir" "$_carch" \
+		"$_flavor" "$_outdir"
+}
+
+sha512sums="
+af3aa358edcc263a1a3b44739362c29c2490a6db3f6453588de074809660214eb9483c0f67aa346988986507a151b77e37e883b000a38bdf0002d9fce49e9078  linux-gm-gm8_go-bc28d182ad94a3df46ac2fc2dfcc633e15e2c711.tar.gz
+0b559a03baf4130ba953ed17f36667db04027d322fe660e76d228a12f45beede030ad67ae7a5486b7b200dac801711906c8f2182a82d8932f3afb556d6604a11  config-gm-gm8_go.aarch64
+197d40a214ada87fcb2dfc0ae4911704b9a93354b75179cd6b4aadbb627a37ec262cf516921c84a8b1806809b70a7b440cdc8310a4a55fca5d2c0baa988e3967  gcc8-fix-put-user.patch
+eaf2e61fcb508cdd239b8fed209d2a09ecac77287f6b46d003918fdf1c6fa2ee63f7390f3ff7c49029b8ed6cbcdd81c7e9a4b1ece9f5060b6fc84e322bd47f41  linux4.2-gcc10-extern_YYLOC_global_declaration.patch
+"
